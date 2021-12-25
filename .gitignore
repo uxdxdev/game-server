@@ -1,4 +1,4 @@
 /node_modules
-localhost.pem
-localhost-key.pem
+*.crt
+*.pem
 .env
