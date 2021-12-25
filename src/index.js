@@ -23,6 +23,10 @@ app.use(function (req, res, next) {
   next();
 });
 
+app.get('/', (req, res) => {
+  res.send(`<a href="${process.env.CLIENT_URL}">Go to client</a>`);
+});
+
 app.get('/ping', (req, res) => {
   res.json({ message: 'pong' });
 });
