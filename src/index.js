@@ -45,8 +45,6 @@ if (process.env.NODE_ENV === 'development') {
   server = http.createServer(app);
 }
 
-console.log('PORT', process.env.PORT);
-
 server.listen(process.env.PORT, () => {
   console.log(`Server listening on process.env.PORT`);
 });
