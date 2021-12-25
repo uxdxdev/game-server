@@ -1,6 +1,12 @@
 import express from 'express';
+import https from 'https';
+import http from 'http';
+import fs from 'fs';
 import { Server } from 'socket.io';
 import { customEvents, socketIoEvents } from './constants.js';
+import dotenv from 'dotenv';
+
+dotenv.config();
 
 const app = express();
 
@@ -8,11 +14,30 @@ app.get('/ping', (req, res) => {
   res.json({ message: 'pong' });
 });
 
-const server = app.listen(process.env.PORT || 3001, () => {
-  console.log(`Listening on port http://localhost:3001...`);
+let server = null;
+if (process.env.NODE_ENV === 'development') {
+  // during development setup HTTPS using self signed certificate
+  const options = {
+    key: fs.readFileSync(process.env.KEY),
+    cert: fs.readFileSync(process.env.CERT),
+  };
+  server = https.createServer(options, app);
+} else {
+  // in production auto redirects will redirect all http traffic to https
+  server = http.createServer(options, app);
+}
+
+server.listen(process.env.PORT, () => {
+  console.log(`Server listening on process.env.PORT`);
 });
 
-const ioServer = new Server(server);
+const ioServer = new Server(server, {
+  // allow client URL origin to make requests
+  cors: {
+    origin: process.env.CLIENT_URL,
+    methods: ['GET', 'POST'],
+  },
+});
 
 const getNumberOfConnectedClients = () => {
   return ioServer.engine.clientsCount;
