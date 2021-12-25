@@ -1,18 +1,10 @@
 # Start
 
-- create self signed certificate
-
-### MacOS
+- create self signed certificate by installing [mkcert](https://github.com/FiloSottile/mkcert)
 
 ```
-openssl req -newkey rsa:2048 -new -nodes -keyout key.pem -out csr.pem
-openssl x509 -req -days 365 -in csr.pem -signkey key.pem -out server.crt
-```
-
-### Windows
-
-```
-// todo
+mkcert -install // create local Certificate Authority
+mkcert localhost // create localhost.pem and localhost-key.pem files
 ```
 
 - update `.env` file
@@ -20,8 +12,8 @@ openssl x509 -req -days 365 -in csr.pem -signkey key.pem -out server.crt
 ```
 NODE_ENV=development
 CLIENT_URL=https://localhost:3000
-KEY=key.pem
-CERT=server.crt
+KEY=localhost-key.pem
+CERT=localhost.pem
 PORT=3001
 ```
 

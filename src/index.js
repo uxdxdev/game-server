@@ -8,12 +8,26 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
+// API
 const app = express();
+
+// Cross-origin resource sharing settings
+app.use(function (req, res, next) {
+  // only allow requests from the client URL
+  res.header('Access-Control-Allow-Origin', process.env.CLIENT_URL);
+  res.header(
+    'Access-Control-Allow-Headers',
+    'Origin, X-Requested-With, Content-Type, Accept'
+  );
+  res.header('Access-Control-Allow-Methods', 'GET');
+  next();
+});
 
 app.get('/ping', (req, res) => {
   res.json({ message: 'pong' });
 });
 
+// WEB SOCKET
 let server = null;
 if (process.env.NODE_ENV === 'development') {
   // during development setup HTTPS using self signed certificate
@@ -24,7 +38,7 @@ if (process.env.NODE_ENV === 'development') {
   server = https.createServer(options, app);
 } else {
   // in production auto redirects will redirect all http traffic to https
-  server = http.createServer(options, app);
+  server = http.createServer(app);
 }
 
 server.listen(process.env.PORT, () => {
@@ -32,10 +46,10 @@ server.listen(process.env.PORT, () => {
 });
 
 const ioServer = new Server(server, {
-  // allow client URL origin to make requests
+  // only allow client URL origin to make requests
   cors: {
     origin: process.env.CLIENT_URL,
-    methods: ['GET', 'POST'],
+    methods: ['GET'],
   },
 });
 
