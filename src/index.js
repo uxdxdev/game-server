@@ -46,13 +46,14 @@ if (process.env.NODE_ENV === 'development') {
 }
 
 server.listen(process.env.PORT, () => {
-  console.log(`Server listening on process.env.PORT`);
+  console.log(`Server is running...`);
 });
 
 const ioServer = new Server(server, {
   // only allow client URL origin to make requests
   cors: {
     origin: process.env.CLIENT_URL,
+    // only allow GET requests
     methods: ['GET'],
   },
 });
