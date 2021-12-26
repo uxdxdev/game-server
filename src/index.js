@@ -3,9 +3,16 @@ import https from 'https';
 import http from 'http';
 import fs from 'fs';
 import { Server } from 'socket.io';
-import { customEvents, socketIoEvents } from './constants.js';
 import dotenv from 'dotenv';
 
+const events = {
+  CONNECTION: 'connection',
+  DISCONNECT: 'disconnect',
+  CONNECTED: 'connected',
+  NUMBER_OF_CONNECTED_CLIENTS: 'number_of_connected_clients',
+};
+
+// read .env file
 dotenv.config();
 
 // API
@@ -23,12 +30,14 @@ app.use(function (req, res, next) {
   next();
 });
 
+// server homepage
 app.get('/', (req, res) => {
   res.send(`<a href="${process.env.CLIENT_URL}">Go to client</a>`);
 });
 
+// health check API
 app.get('/ping', (req, res) => {
-  res.json({ message: 'pong' });
+  res.sendStatus(200);
 });
 
 // WEB SOCKET
@@ -42,31 +51,49 @@ if (process.env.NODE_ENV === 'development') {
   server = https.createServer(options, app);
 } else {
   // in production auto redirects will redirect all http traffic to https
+  // so no need for SSL certs
   server = http.createServer(app);
 }
 
-server.listen(process.env.PORT, () => {
-  console.log(`Server is running...`);
-});
-
-const ioServer = new Server(server, {
-  // only allow client URL origin to make requests
+// create socket.io server from node http(s) server
+const io = new Server(server, {
   cors: {
+    // only allow client URL origin to make requests
     origin: process.env.CLIENT_URL,
     // only allow GET requests
     methods: ['GET'],
   },
 });
 
+server.listen(process.env.PORT, () => {
+  console.log(`Server is running...`);
+});
+
+const isValidToken = (token) => {
+  return token;
+};
+
+// token authentication when clients connect
+io.use((socket, next) => {
+  const token = socket.handshake.auth.token;
+  if (isValidToken(token)) {
+    next();
+  } else {
+    next(
+      new Error('You are not authorised to make a connection to this server')
+    );
+  }
+});
+
 const getNumberOfConnectedClients = () => {
-  return ioServer.engine.clientsCount;
+  return io.engine.clientsCount;
 };
 
 const sendEventDataToAllClients = (eventName, data) => {
-  ioServer.sockets.emit(eventName, data);
+  io.sockets.emit(eventName, data);
 };
 
-ioServer.on('connection', (client) => {
+io.on(events.CONNECTION, (client) => {
   console.log(
     `User ${
       client.id
@@ -74,15 +101,15 @@ ioServer.on('connection', (client) => {
   );
 
   // when a client connects send them their client.id
-  client.emit(socketIoEvents.CONNECTED, client.id);
+  client.emit(events.CONNECTED, client.id);
 
   // send the number of connected clients to all clients
   sendEventDataToAllClients(
-    customEvents.NUMBER_OF_CONNECTED_CLIENTS,
+    events.NUMBER_OF_CONNECTED_CLIENTS,
     getNumberOfConnectedClients()
   );
 
-  client.on('disconnect', () => {
+  client.on(events.DISCONNECT, () => {
     console.log(
       `User ${
         client.id
@@ -90,7 +117,7 @@ ioServer.on('connection', (client) => {
     );
 
     sendEventDataToAllClients(
-      customEvents.NUMBER_OF_CONNECTED_CLIENTS,
+      events.NUMBER_OF_CONNECTED_CLIENTS,
       getNumberOfConnectedClients()
     );
   });
