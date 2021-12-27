@@ -42,7 +42,11 @@ app.use(function (req, res, next) {
 
 // server homepage
 app.get('/', (req, res) => {
-  res.send(`<a href="${process.env.CLIENT_URL}">Go to client</a>`);
+  res.send(
+    `<div>${getNumberOfConnectedClients()} clients connected</div><a href="${
+      process.env.CLIENT_URL
+    }">Go to client</a>`
+  );
 });
 
 // health check API
