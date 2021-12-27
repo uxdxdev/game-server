@@ -2,3 +2,4 @@
 *.crt
 *.pem
 .env
+firebase-admin-service-account.json

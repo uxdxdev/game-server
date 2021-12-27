@@ -4,6 +4,19 @@ import http from 'http';
 import fs from 'fs';
 import { Server } from 'socket.io';
 import dotenv from 'dotenv';
+import admin from 'firebase-admin';
+
+dotenv.config();
+
+admin.initializeApp({
+  credential: admin.credential.cert({
+    project_id: process.env.FIREBASE_PROJECT_ID,
+    private_key: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+    client_email: process.env.FIREBASE_CLIENT_EMAIL,
+  }),
+});
+
+const auth = admin.auth();
 
 const events = {
   CONNECTION: 'connection',
@@ -11,9 +24,6 @@ const events = {
   CONNECTED: 'connected',
   NUMBER_OF_CONNECTED_CLIENTS: 'number_of_connected_clients',
 };
-
-// read .env file
-dotenv.config();
 
 // API
 const app = express();
@@ -69,14 +79,14 @@ server.listen(process.env.PORT, () => {
   console.log(`Server is running...`);
 });
 
-const isValidToken = (token) => {
-  return token;
-};
-
 // token authentication when clients connect
-io.use((socket, next) => {
+io.use(async (socket, next) => {
   const token = socket.handshake.auth.token;
-  if (isValidToken(token)) {
+  const isAuthenticated = await auth
+    .verifyIdToken(token)
+    .then(() => true)
+    .catch(() => false);
+  if (token && isAuthenticated) {
     next();
   } else {
     next(
@@ -95,12 +105,12 @@ const sendEventDataToAllClients = (eventName, data) => {
 
 io.on(events.CONNECTION, (client) => {
   console.log(
-    `User ${
+    `User ${client.handshake.auth.userId} connected on socket ${
       client.id
-    } connected, there are currently ${getNumberOfConnectedClients()} users connected`
+    }, there are currently ${getNumberOfConnectedClients()} users connected`
   );
 
-  // when a client connects send them their client.id
+  // when a client connects send them a notification
   client.emit(events.CONNECTED, client.id);
 
   // send the number of connected clients to all clients
@@ -109,16 +119,15 @@ io.on(events.CONNECTION, (client) => {
     getNumberOfConnectedClients()
   );
 
-  client.on(events.DISCONNECT, () => {
-    console.log(
-      `User ${
-        client.id
-      } disconnected, there are currently ${getNumberOfConnectedClients()} users connected`
-    );
+  client.once(events.DISCONNECT, () => {
+    console.log(`User ${client.handshake.auth.userId} disconnected`);
 
+    // remove this client from the number of connected clients
+    const numberOfConnectedClients = getNumberOfConnectedClients() - 1;
+    // send all remaining connected clients the updated number of clients
     sendEventDataToAllClients(
       events.NUMBER_OF_CONNECTED_CLIENTS,
-      getNumberOfConnectedClients()
+      numberOfConnectedClients
     );
   });
 });
