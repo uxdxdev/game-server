@@ -23,6 +23,7 @@ const events = {
   DISCONNECT: 'disconnect',
   CONNECTED: 'connected',
   NUMBER_OF_CONNECTED_CLIENTS: 'number_of_connected_clients',
+  DRAW: 'draw',
 };
 
 // API
@@ -122,6 +123,12 @@ io.on(events.CONNECTION, (client) => {
     events.NUMBER_OF_CONNECTED_CLIENTS,
     getNumberOfConnectedClients()
   );
+
+  // when the server receives a 'draw' event from a client
+  // broadcast the data to all connected clients
+  client.on(events.DRAW, (data) => {
+    sendEventDataToAllClients(events.DRAW, data);
+  });
 
   client.once(events.DISCONNECT, () => {
     console.log(`User ${client.handshake.auth.userId} disconnected`);
