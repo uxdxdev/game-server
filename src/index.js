@@ -24,7 +24,10 @@ const events = {
   CONNECTED: 'connected',
   NUMBER_OF_CONNECTED_CLIENTS: 'number_of_connected_clients',
   DRAW: 'draw',
+  INIT_CANVAS: 'init_canvas',
 };
+
+const currentCanvas = [];
 
 // API
 const app = express();
@@ -124,9 +127,14 @@ io.on(events.CONNECTION, (client) => {
     getNumberOfConnectedClients()
   );
 
+  // send the current state of the canvas
+  client.emit(events.INIT_CANVAS, currentCanvas);
+
   // when the server receives a 'draw' event from a client
   // broadcast the data to all connected clients
   client.on(events.DRAW, (data) => {
+    // save any update to the canvas state
+    currentCanvas.push(data);
     sendEventDataToAllClients(events.DRAW, data);
   });
 
