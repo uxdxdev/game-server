@@ -22,7 +22,6 @@ const events = {
   CONNECTION: 'connection',
   DISCONNECT: 'disconnect',
   CONNECTED: 'connected',
-  NUMBER_OF_CONNECTED_CLIENTS: 'number_of_connected_clients',
   DRAW: 'draw',
   INIT_CANVAS: 'init_canvas',
 };
@@ -107,10 +106,6 @@ const getNumberOfConnectedClients = () => {
   return io.engine.clientsCount;
 };
 
-const sendEventDataToAllClients = (eventName, data) => {
-  io.sockets.emit(eventName, data);
-};
-
 io.on(events.CONNECTION, (client) => {
   console.log(
     `User ${client.handshake.auth.userId} connected on socket ${
@@ -121,12 +116,6 @@ io.on(events.CONNECTION, (client) => {
   // when a client connects send them a notification
   client.emit(events.CONNECTED, client.id);
 
-  // send the number of connected clients to all clients
-  sendEventDataToAllClients(
-    events.NUMBER_OF_CONNECTED_CLIENTS,
-    getNumberOfConnectedClients()
-  );
-
   // send the current state of the canvas
   client.emit(events.INIT_CANVAS, currentCanvas);
 
@@ -135,18 +124,12 @@ io.on(events.CONNECTION, (client) => {
   client.on(events.DRAW, (data) => {
     // save any update to the canvas state
     currentCanvas.push(data);
-    sendEventDataToAllClients(events.DRAW, data);
+
+    // broadcast to connected clients
+    io.sockets.emit(events.DRAW, data);
   });
 
   client.once(events.DISCONNECT, () => {
     console.log(`User ${client.handshake.auth.userId} disconnected`);
-
-    // remove this client from the number of connected clients
-    const numberOfConnectedClients = getNumberOfConnectedClients() - 1;
-    // send all remaining connected clients the updated number of clients
-    sendEventDataToAllClients(
-      events.NUMBER_OF_CONNECTED_CLIENTS,
-      numberOfConnectedClients
-    );
   });
 });
