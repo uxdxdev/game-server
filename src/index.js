@@ -103,10 +103,9 @@ io.on(events.CONNECTION, (client) => {
 
   players[client.id] = {};
 
+  // clients update server 20 times per second
   client.on('player_update', (data) => {
-    console.log('updating...');
     players[data.id] = data;
-    io.sockets.emit('players', players);
   });
 
   client.once(events.DISCONNECT, () => {
@@ -116,3 +115,14 @@ io.on(events.CONNECTION, (client) => {
     io.sockets.emit('players', players);
   });
 });
+
+const tickRateMilliseconds = 50; // 20 times per second
+setInterval(() => {
+  main();
+}, tickRateMilliseconds);
+
+const main = () => {
+  io.sockets.emit('players', players);
+};
+
+main();
