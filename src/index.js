@@ -93,17 +93,26 @@ const getNumberOfConnectedClients = () => {
   return io.engine.clientsCount;
 };
 
+const players = {};
+
 io.on(events.CONNECTION, (client) => {
   console.log(`User ${client.handshake.auth.userId} connected on socket ${client.id}, there are currently ${getNumberOfConnectedClients()} users connected`);
 
   // when a client connects send them a notification
   client.emit(events.CONNECTED, client.id);
 
+  players[client.id] = {};
+
   client.on('player_update', (data) => {
-    io.sockets.emit('player_update', data);
+    console.log('updating...');
+    players[data.id] = data;
+    io.sockets.emit('players', players);
   });
 
   client.once(events.DISCONNECT, () => {
     console.log(`User ${client.handshake.auth.userId} disconnected`);
+
+    delete players[client.id];
+    io.sockets.emit('players', players);
   });
 });
