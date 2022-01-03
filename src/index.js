@@ -121,6 +121,6 @@ setInterval(() => {
   main();
 }, tickRateMilliseconds);
 
-const main = async () => {
+const main = () => {
   io.sockets.emit('players', players);
 };
