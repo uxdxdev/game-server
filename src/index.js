@@ -101,8 +101,6 @@ io.on(events.CONNECTION, (client) => {
   // when a client connects send them a notification
   client.emit(events.CONNECTED, client.id);
 
-  players[client.id] = {};
-
   // clients update server 20 times per second
   client.on('player_update', (data) => {
     players[data.id] = data;
