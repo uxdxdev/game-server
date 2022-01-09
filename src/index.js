@@ -198,7 +198,7 @@ io.on(events.CONNECTION, (client) => {
 
   // get updates from the client
   client.on('player_update', (data) => {
-    if (data.id && data.controls) {
+    if (data.id && data.controls && players[data.id]) {
       players[data.id].controls.left = data.controls.left;
       players[data.id].controls.right = data.controls.right;
       players[data.id].controls.forward = data.controls.forward;
@@ -219,47 +219,8 @@ setInterval(() => {
   main();
 }, tickRateMilliseconds);
 
-const checkPlayerCollisions = (playerPos, world) => {
-  // world boundary collisions
-  if (playerPos.x >= world.width / 2 || playerPos.x <= -world.width / 2 || playerPos.z >= world.height / 2 || playerPos.z <= -world.height / 2) return true;
-  // world object collisions
-  const { objects } = world;
-  for (let o = 0; o < objects.length; o++) {
-    const obj = objects[o];
-    if (Math.abs(playerPos.x - obj.x) <= obj.bbox && Math.abs(playerPos.z - obj.z) <= obj.bbox) return true;
-  }
-  return false;
-};
-
-const frontVector = new Vector3();
-const sideVector = new Vector3();
-const direction = new Vector3();
-
-const updatePlayerPosition = (player, world) => {
-  // rotation
-  frontVector.set(0, 0, Number(player.controls.backward) - Number(player.controls.forward));
-  sideVector.set(Number(player.controls.left) - Number(player.controls.right), 0, 0);
-  direction.subVectors(frontVector, sideVector);
-
-  const rotation = Math.atan2(direction.x, direction.z);
-
-  // AABB
-
-  // position
-  const newPosition = { ...player.position };
-  if (player.controls.left) newPosition.x -= SPEED;
-  if (player.controls.right) newPosition.x += SPEED;
-  if (player.controls.forward) newPosition.z -= SPEED;
-  if (player.controls.backward) newPosition.z += SPEED;
-  const isPlayerColliding = checkPlayerCollisions(newPosition, world);
-
-  // if any collisions return player position before move
-  const position = isPlayerColliding ? player.position : newPosition;
-
-  return { position, rotation };
-};
-
 const main = () => {
+  // const t0 = performance.now();
   // for each player
   // update player position based on world, objects, and collision data
   Object.keys(players).forEach((key) => {
@@ -268,24 +229,131 @@ const main = () => {
     players[key].position = result.position;
     players[key].rotation = result.rotation;
   });
-  // send all clients all player data
+  // // send all clients all player data
   io.sockets.emit('players', players);
+  // const t1 = performance.now();
+  // if (t1 - t0 > tickRateMilliseconds / 100) {
+  //   console.log(`main() took ${t1 - t0} milliseconds.`);
+  // }
+};
+
+const checkPlayerCollisions = (playerPosition, playerAABB, world) => {
+  // world boundary collisions
+  if (
+    // check player bbox
+    playerAABB.bl.x >= world.width / 2 ||
+    playerAABB.bl.x <= -world.width / 2 ||
+    playerAABB.bl.z >= world.height / 2 ||
+    playerAABB.bl.z <= -world.height / 2 ||
+    playerAABB.br.x >= world.width / 2 ||
+    playerAABB.br.x <= -world.width / 2 ||
+    playerAABB.br.z >= world.height / 2 ||
+    playerAABB.br.z <= -world.height / 2 ||
+    playerAABB.fl.x >= world.width / 2 ||
+    playerAABB.fl.x <= -world.width / 2 ||
+    playerAABB.fl.z >= world.height / 2 ||
+    playerAABB.fl.z <= -world.height / 2 ||
+    playerAABB.fr.x >= world.width / 2 ||
+    playerAABB.fr.x <= -world.width / 2 ||
+    playerAABB.fr.z >= world.height / 2 ||
+    playerAABB.fr.z <= -world.height / 2 ||
+    // check player center position
+    playerPosition.x >= world.width / 2 ||
+    playerPosition.x <= -world.width / 2 ||
+    playerPosition.z >= world.height / 2 ||
+    playerPosition.z <= -world.height / 2
+  )
+    return true;
+  // world object collisions
+  const { objects } = world;
+  for (let o = 0; o < objects.length; o++) {
+    const obj = objects[o];
+    if (
+      // check player bbox
+      (Math.abs(playerAABB.bl.x - obj.x) <= obj.bbox && Math.abs(playerAABB.bl.z - obj.z) <= obj.bbox) ||
+      (Math.abs(playerAABB.br.x - obj.x) <= obj.bbox && Math.abs(playerAABB.br.z - obj.z) <= obj.bbox) ||
+      (Math.abs(playerAABB.fl.x - obj.x) <= obj.bbox && Math.abs(playerAABB.fl.z - obj.z) <= obj.bbox) ||
+      (Math.abs(playerAABB.fr.x - obj.x) <= obj.bbox && Math.abs(playerAABB.fr.z - obj.z) <= obj.bbox) ||
+      // check player center position
+      (Math.abs(playerPosition.x - obj.x) <= obj.bbox && Math.abs(playerPosition.z - obj.z) <= obj.bbox)
+    )
+      return true;
+  }
+  return false;
+};
+
+const frontVector = new Vector3();
+const sideVector = new Vector3();
+const direction = new Vector3();
+// when player if facing downwards, i.e. rotation is 0
+// bounding box coordinates relative to player center position
+const boundingBox = {
+  bl: {
+    x: 0.5,
+    z: -1.5,
+  },
+  br: {
+    x: -0.5,
+    z: -1.5,
+  },
+  fl: {
+    x: -0.5,
+    z: 1.5,
+  },
+  fr: {
+    x: 0.5,
+    z: 1.5,
+  },
+};
+
+const updatePlayerPosition = (player, world) => {
+  // rotation
+  frontVector.set(0, 0, Number(player.controls.backward) - Number(player.controls.forward));
+  sideVector.set(Number(player.controls.left) - Number(player.controls.right), 0, 0);
+  direction.subVectors(frontVector, sideVector);
+
+  // position
+  const newPosition = { ...player.position };
+  if (player.controls.left) newPosition.x -= SPEED;
+  if (player.controls.right) newPosition.x += SPEED;
+  if (player.controls.forward) newPosition.z -= SPEED;
+  if (player.controls.backward) newPosition.z += SPEED;
+
+  // AABB
+  const rotation = Math.atan2(direction.x, direction.z);
+  const playerAABB = getUpdatedAABB(rotation, newPosition, boundingBox);
+  const isPlayerColliding = checkPlayerCollisions(newPosition, playerAABB, world);
+
+  // if any collisions return player position before move
+
+  return { position: isPlayerColliding ? player.position : newPosition, rotation };
+};
+
+const rotatePoint = (angle, cx, cz, px, pz) => {
+  let x = px;
+  let z = pz;
+  x -= cx;
+  z -= cz;
+  let newX = x * Math.cos(angle) - z * Math.sin(angle);
+  let newZ = x * Math.sin(angle) + z * Math.cos(angle);
+  x = newX + cx;
+  z = newZ + cz;
+  return {
+    x,
+    z,
+  };
 };
 
 // todo: add fake remote players and update there positions to test how the client handles the updates
-const rotatePoint = (angle, px, pz) => {
-  let x = px * Math.cos(angle) - pz * Math.sin(angle);
-  let z = pz * Math.cos(angle) + px * Math.sin(angle);
-  // let s = Math.Sin(angle);
-  // let c = Math.Cos(angle);
-  // // translate point back to origin:
-  // p.X -= cx;
-  // p.Y -= cy;
-  // // rotate point
-  // let Xnew = p.X * c - p.Y * s;
-  // let Ynew = p.X * s + p.Y * c;
-  // // translate point back:
-  // p.X = Xnew + cx;
-  // p.Y = Ynew + cy;
-  return { x, z };
+const getUpdatedAABB = (angle, playerPosition, bbox) => {
+  let bl = rotatePoint(angle, playerPosition.x, playerPosition.z, playerPosition.x + bbox.bl.x, playerPosition.z + bbox.bl.z);
+  let br = rotatePoint(angle, playerPosition.x, playerPosition.z, playerPosition.x + bbox.br.x, playerPosition.z + bbox.br.z);
+  let fl = rotatePoint(angle, playerPosition.x, playerPosition.z, playerPosition.x + bbox.fl.x, playerPosition.z + bbox.fl.z);
+  let fr = rotatePoint(angle, playerPosition.x, playerPosition.z, playerPosition.x + bbox.fr.x, playerPosition.z + bbox.fr.z);
+  return {
+    bl,
+    br,
+    fl,
+    fr,
+  };
 };
