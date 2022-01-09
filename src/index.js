@@ -5,6 +5,7 @@ import fs from 'fs';
 import { Server } from 'socket.io';
 import dotenv from 'dotenv';
 import admin from 'firebase-admin';
+import { Vector3 } from 'three';
 
 // constants
 const SPEED = 0.5;
@@ -50,56 +51,56 @@ app.get('/ping', (req, res) => {
 });
 
 const trees = [
-  { name: 'tree', bbox: 1, x: 10, z: 18, rotation: 2.2877994332820304 },
-  { name: 'tree', bbox: 1, x: -1, z: -44, rotation: 1.1710819415102538 },
-  { name: 'tree', bbox: 1, x: -45, z: -43, rotation: 2.4509400560824135 },
-  { name: 'tree', bbox: 1, x: 5, z: -12, rotation: 2.3501323438484394 },
-  { name: 'tree', bbox: 1, x: 38, z: 28, rotation: 2.122005731671518 },
-  { name: 'tree', bbox: 1, x: -35, z: 40, rotation: 0.7210891195907829 },
-  { name: 'tree', bbox: 1, x: -11, z: -5, rotation: 0.33514948174229187 },
-  { name: 'tree', bbox: 1, x: 23, z: -3, rotation: 0.021704156372019837 },
-  { name: 'tree', bbox: 1, x: 2, z: -37, rotation: 0.07255237416921666 },
-  { name: 'tree', bbox: 1, x: 32, z: -20, rotation: 2.7789401250019785 },
-  { name: 'tree', bbox: 1, x: 19, z: -41, rotation: 1.065988415418212 },
-  { name: 'tree', bbox: 1, x: 24, z: 25, rotation: 3.026271079656134 },
-  { name: 'tree', bbox: 1, x: -7, z: -40, rotation: 0.5215170365083107 },
-  { name: 'tree', bbox: 1, x: -5, z: 5, rotation: 1.5584772864158605 },
-  { name: 'tree', bbox: 1, x: 15, z: 48, rotation: 2.516774685898536 },
-  { name: 'tree', bbox: 1, x: -23, z: 45, rotation: 2.180290409313535 },
-  { name: 'tree', bbox: 1, x: 8, z: 49, rotation: 2.4113514173818134 },
-  { name: 'tree', bbox: 1, x: 6, z: -36, rotation: 2.248144885675486 },
-  { name: 'tree', bbox: 1, x: 26, z: -11, rotation: 0.4206530715249706 },
-  { name: 'tree', bbox: 1, x: 43, z: -10, rotation: 2.2015094356442666 },
-  { name: 'tree', bbox: 1, x: -22, z: 21, rotation: 0.0831329416487083 },
-  { name: 'tree', bbox: 1, x: 5, z: -12, rotation: 0.8044805423557037 },
-  { name: 'tree', bbox: 1, x: -47, z: 23, rotation: 0.8088879703555721 },
-  { name: 'tree', bbox: 1, x: 4, z: 15, rotation: 2.515836004211794 },
-  { name: 'tree', bbox: 1, x: -35, z: 46, rotation: 1.0766071191686488 },
-  { name: 'tree', bbox: 1, x: 8, z: 31, rotation: 2.4626110033392283 },
-  { name: 'tree', bbox: 1, x: -4, z: -14, rotation: 0.23821009449184166 },
-  { name: 'tree', bbox: 1, x: 14, z: -27, rotation: 2.4381921765247734 },
-  { name: 'tree', bbox: 1, x: 20, z: 11, rotation: 1.3051786738401518 },
-  { name: 'tree', bbox: 1, x: 13, z: 33, rotation: 2.582674912557875 },
-  { name: 'tree', bbox: 1, x: 3, z: -14, rotation: 1.664545491759111 },
-  { name: 'tree', bbox: 1, x: 3, z: -34, rotation: 0.05498910141646792 },
-  { name: 'tree', bbox: 1, x: 17, z: -34, rotation: 1.0341483068112407 },
-  { name: 'tree', bbox: 1, x: 31, z: 8, rotation: 2.648219145843404 },
-  { name: 'tree', bbox: 1, x: 30, z: -9, rotation: 2.5114814368884755 },
-  { name: 'tree', bbox: 1, x: -30, z: -43, rotation: 2.7907100149480275 },
-  { name: 'tree', bbox: 1, x: 25, z: 32, rotation: 3.0910733444006135 },
-  { name: 'tree', bbox: 1, x: 31, z: 2, rotation: 2.1010185118022275 },
-  { name: 'tree', bbox: 1, x: 27, z: 31, rotation: 0.09205736550157151 },
-  { name: 'tree', bbox: 1, x: 3, z: 33, rotation: 0.29017598018054963 },
-  { name: 'tree', bbox: 1, x: 4, z: -24, rotation: 0.9942192348204996 },
-  { name: 'tree', bbox: 1, x: 19, z: -18, rotation: 3.1186551626953656 },
-  { name: 'tree', bbox: 1, x: -29, z: 8, rotation: 0.11058662987299647 },
-  { name: 'tree', bbox: 1, x: 38, z: 30, rotation: 0.4418120626856891 },
-  { name: 'tree', bbox: 1, x: -16, z: -28, rotation: 0.27916951703262355 },
-  { name: 'tree', bbox: 1, x: 2, z: 12, rotation: 1.6741034425626715 },
-  { name: 'tree', bbox: 1, x: 33, z: -17, rotation: 1.7793213811772306 },
-  { name: 'tree', bbox: 1, x: 36, z: -6, rotation: 0.07419963147662335 },
-  { name: 'tree', bbox: 1, x: -23, z: 29, rotation: 1.556578929636454 },
-  { name: 'tree', bbox: 1, x: -18, z: 7, rotation: 1.307940564316852 },
+  { name: 'tree', bbox: 0.5, x: 10, z: 18, rotation: 2.2877994332820304 },
+  { name: 'tree', bbox: 0.5, x: -1, z: -44, rotation: 1.1710819415102538 },
+  { name: 'tree', bbox: 0.5, x: -45, z: -43, rotation: 2.4509400560824135 },
+  { name: 'tree', bbox: 0.5, x: 5, z: -12, rotation: 2.3501323438484394 },
+  { name: 'tree', bbox: 0.5, x: 38, z: 28, rotation: 2.122005731671518 },
+  { name: 'tree', bbox: 0.5, x: -35, z: 40, rotation: 0.7210891195907829 },
+  { name: 'tree', bbox: 0.5, x: -11, z: -5, rotation: 0.33514948174229187 },
+  { name: 'tree', bbox: 0.5, x: 23, z: -3, rotation: 0.021704156372019837 },
+  { name: 'tree', bbox: 0.5, x: 2, z: -37, rotation: 0.07255237416921666 },
+  { name: 'tree', bbox: 0.5, x: 32, z: -20, rotation: 2.7789401250019785 },
+  { name: 'tree', bbox: 0.5, x: 19, z: -41, rotation: 1.065988415418212 },
+  { name: 'tree', bbox: 0.5, x: 24, z: 25, rotation: 3.026271079656134 },
+  { name: 'tree', bbox: 0.5, x: -7, z: -40, rotation: 0.5215170365083107 },
+  { name: 'tree', bbox: 0.5, x: -5, z: 5, rotation: 1.5584772864158605 },
+  { name: 'tree', bbox: 0.5, x: 15, z: 48, rotation: 2.516774685898536 },
+  { name: 'tree', bbox: 0.5, x: -23, z: 45, rotation: 2.180290409313535 },
+  { name: 'tree', bbox: 0.5, x: 8, z: 49, rotation: 2.4113514173818134 },
+  { name: 'tree', bbox: 0.5, x: 6, z: -36, rotation: 2.248144885675486 },
+  { name: 'tree', bbox: 0.5, x: 26, z: -11, rotation: 0.4206530715249706 },
+  { name: 'tree', bbox: 0.5, x: 43, z: -10, rotation: 2.2015094356442666 },
+  { name: 'tree', bbox: 0.5, x: -22, z: 21, rotation: 0.0831329416487083 },
+  { name: 'tree', bbox: 0.5, x: 5, z: -12, rotation: 0.8044805423557037 },
+  { name: 'tree', bbox: 0.5, x: -47, z: 23, rotation: 0.8088879703555721 },
+  { name: 'tree', bbox: 0.5, x: 4, z: 15, rotation: 2.515836004211794 },
+  { name: 'tree', bbox: 0.5, x: -35, z: 46, rotation: 1.0766071191686488 },
+  { name: 'tree', bbox: 0.5, x: 8, z: 31, rotation: 2.4626110033392283 },
+  { name: 'tree', bbox: 0.5, x: -4, z: -14, rotation: 0.23821009449184166 },
+  { name: 'tree', bbox: 0.5, x: 14, z: -27, rotation: 2.4381921765247734 },
+  { name: 'tree', bbox: 0.5, x: 20, z: 11, rotation: 1.3051786738401518 },
+  { name: 'tree', bbox: 0.5, x: 13, z: 33, rotation: 2.582674912557875 },
+  { name: 'tree', bbox: 0.5, x: 3, z: -14, rotation: 1.664545491759111 },
+  { name: 'tree', bbox: 0.5, x: 3, z: -34, rotation: 0.05498910141646792 },
+  { name: 'tree', bbox: 0.5, x: 17, z: -34, rotation: 1.0341483068112407 },
+  { name: 'tree', bbox: 0.5, x: 31, z: 8, rotation: 2.648219145843404 },
+  { name: 'tree', bbox: 0.5, x: 30, z: -9, rotation: 2.5114814368884755 },
+  { name: 'tree', bbox: 0.5, x: -30, z: -43, rotation: 2.7907100149480275 },
+  { name: 'tree', bbox: 0.5, x: 25, z: 32, rotation: 3.0910733444006135 },
+  { name: 'tree', bbox: 0.5, x: 31, z: 2, rotation: 2.1010185118022275 },
+  { name: 'tree', bbox: 0.5, x: 27, z: 31, rotation: 0.09205736550157151 },
+  { name: 'tree', bbox: 0.5, x: 3, z: 33, rotation: 0.29017598018054963 },
+  { name: 'tree', bbox: 0.5, x: 4, z: -24, rotation: 0.9942192348204996 },
+  { name: 'tree', bbox: 0.5, x: 19, z: -18, rotation: 3.1186551626953656 },
+  { name: 'tree', bbox: 0.5, x: -29, z: 8, rotation: 0.11058662987299647 },
+  { name: 'tree', bbox: 0.5, x: 38, z: 30, rotation: 0.4418120626856891 },
+  { name: 'tree', bbox: 0.5, x: -16, z: -28, rotation: 0.27916951703262355 },
+  { name: 'tree', bbox: 0.5, x: 2, z: 12, rotation: 1.6741034425626715 },
+  { name: 'tree', bbox: 0.5, x: 33, z: -17, rotation: 1.7793213811772306 },
+  { name: 'tree', bbox: 0.5, x: 36, z: -6, rotation: 0.07419963147662335 },
+  { name: 'tree', bbox: 0.5, x: -23, z: 29, rotation: 1.556578929636454 },
+  { name: 'tree', bbox: 0.5, x: -18, z: 7, rotation: 1.307940564316852 },
 ];
 
 const worldData = { width: 50, height: 50, objects: [...trees] };
@@ -183,6 +184,7 @@ io.on(events.CONNECTION, (client) => {
       y: 0,
       z: 0,
     },
+    rotation: 0,
     controls: {
       left: false,
       right: false,
@@ -217,37 +219,33 @@ setInterval(() => {
   main();
 }, tickRateMilliseconds);
 
-// todo: test returning boolean if any collisions detected
 const checkPlayerCollisions = (playerPos, world) => {
-  let collision = { x: false, negX: false, z: false, negZ: false };
-
   // world boundary collisions
-  // x axis
-  if (playerPos.x >= world.width / 2) collision.x = true;
-  else if (playerPos.x <= -world.width / 2) collision.negX = true;
-  // z axis
-  if (playerPos.z >= world.height / 2) collision.z = true;
-  else if (playerPos.z <= -world.height / 2) collision.negZ = true;
-
+  if (playerPos.x >= world.width / 2 || playerPos.x <= -world.width / 2 || playerPos.z >= world.height / 2 || playerPos.z <= -world.height / 2) return true;
   // world object collisions
   const { objects } = world;
   for (let o = 0; o < objects.length; o++) {
     const obj = objects[o];
-    if (Math.abs(playerPos.x - obj.x) <= obj.bbox && Math.abs(playerPos.z - obj.z) <= obj.bbox) {
-      // x axis
-      if (playerPos.x < obj.x) collision.x = true;
-      else if (playerPos.x > obj.x) collision.negX = true;
-      // z axis
-      if (playerPos.z < obj.z) collision.z = true;
-      else if (playerPos.z > obj.z) collision.negZ = true;
-
-      if (collision.x || collision.negX || collision.z || collision.negZ) break;
-    }
+    if (Math.abs(playerPos.x - obj.x) <= obj.bbox && Math.abs(playerPos.z - obj.z) <= obj.bbox) return true;
   }
-  return collision.x || collision.negX || collision.z || collision.negZ;
+  return false;
 };
 
+const frontVector = new Vector3();
+const sideVector = new Vector3();
+const direction = new Vector3();
+
 const updatePlayerPosition = (player, world) => {
+  // rotation
+  frontVector.set(0, 0, Number(player.controls.backward) - Number(player.controls.forward));
+  sideVector.set(Number(player.controls.left) - Number(player.controls.right), 0, 0);
+  direction.subVectors(frontVector, sideVector);
+
+  const rotation = Math.atan2(direction.x, direction.z);
+
+  // AABB
+
+  // position
   const newPosition = { ...player.position };
   if (player.controls.left) newPosition.x -= SPEED;
   if (player.controls.right) newPosition.x += SPEED;
@@ -256,7 +254,9 @@ const updatePlayerPosition = (player, world) => {
   const isPlayerColliding = checkPlayerCollisions(newPosition, world);
 
   // if any collisions return player position before move
-  return isPlayerColliding ? player.position : newPosition;
+  const position = isPlayerColliding ? player.position : newPosition;
+
+  return { position, rotation };
 };
 
 const main = () => {
@@ -264,11 +264,28 @@ const main = () => {
   // update player position based on world, objects, and collision data
   Object.keys(players).forEach((key) => {
     const playerData = players[key];
-    const newPosition = updatePlayerPosition(playerData, worldData);
-    players[key].position = newPosition;
+    const result = updatePlayerPosition(playerData, worldData);
+    players[key].position = result.position;
+    players[key].rotation = result.rotation;
   });
   // send all clients all player data
   io.sockets.emit('players', players);
 };
 
 // todo: add fake remote players and update there positions to test how the client handles the updates
+const rotatePoint = (angle, px, pz) => {
+  let x = px * Math.cos(angle) - pz * Math.sin(angle);
+  let z = pz * Math.cos(angle) + px * Math.sin(angle);
+  // let s = Math.Sin(angle);
+  // let c = Math.Cos(angle);
+  // // translate point back to origin:
+  // p.X -= cx;
+  // p.Y -= cy;
+  // // rotate point
+  // let Xnew = p.X * c - p.Y * s;
+  // let Ynew = p.X * s + p.Y * c;
+  // // translate point back:
+  // p.X = Xnew + cx;
+  // p.Y = Ynew + cy;
+  return { x, z };
+};
