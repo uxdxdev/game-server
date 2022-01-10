@@ -7,50 +7,14 @@ import dotenv from 'dotenv';
 import admin from 'firebase-admin';
 import { Vector3 } from 'three';
 
-// constants
-const SPEED = 0.5;
-
-dotenv.config();
-
-admin.initializeApp({
-  credential: admin.credential.cert({
-    project_id: process.env.FIREBASE_PROJECT_ID,
-    private_key: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-    client_email: process.env.FIREBASE_CLIENT_EMAIL,
-  }),
-});
-
-const auth = admin.auth();
-
+const PLAYER_SPEED = 0.5;
+const players = {};
 const events = {
   CONNECTION: 'connection',
   DISCONNECT: 'disconnect',
   CONNECTED: 'connected',
 };
-
-// API
-const app = express();
-
-// Cross-origin resource sharing settings
-app.use(function (req, res, next) {
-  // only allow requests from the client URL
-  res.header('Access-Control-Allow-Origin', process.env.CLIENT_URL);
-  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
-  res.header('Access-Control-Allow-Methods', 'GET');
-  next();
-});
-
-// server homepage
-app.get('/', (req, res) => {
-  res.send(`<div>${getNumberOfConnectedClients()} clients connected</div><a href="${process.env.CLIENT_URL}">Go to client</a>`);
-});
-
-// health check API
-app.get('/ping', (req, res) => {
-  res.sendStatus(200);
-});
-
-const multipleTrees = [
+const trees = [
   {
     name: 'tree',
     bbox: {
@@ -1253,15 +1217,58 @@ const multipleTrees = [
   },
 ];
 
-const trees = [...multipleTrees];
-
 const worldData = { width: 100, height: 100, objects: [...trees] };
 
-app.get('/world', (req, res) => {
-  res.send({ worldData });
+dotenv.config();
+
+admin.initializeApp({
+  credential: admin.credential.cert({
+    project_id: process.env.FIREBASE_PROJECT_ID,
+    private_key: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+    client_email: process.env.FIREBASE_CLIENT_EMAIL,
+  }),
 });
 
-// WEB SOCKET
+const auth = admin.auth();
+
+// API
+const app = express();
+
+// Cross-origin resource sharing settings
+app.use((req, res, next) => {
+  // only allow requests from the client URL
+  res.header('Access-Control-Allow-Origin', process.env.CLIENT_URL);
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, auth-token');
+  res.header('Access-Control-Allow-Methods', 'GET');
+  next();
+});
+
+// server homepage
+app.get('/', (req, res) => {
+  res.send(`<div>${getNumberOfConnectedClients()} clients connected</div><a href="${process.env.CLIENT_URL}">Go to client</a>`);
+});
+
+// health check API
+app.get('/ping', (req, res) => {
+  res.sendStatus(200);
+});
+
+// send world data to clients for initialisation
+app.get('/world', async (req, res) => {
+  const token = req.header('auth-token');
+  const isAuthenticated = await auth
+    .verifyIdToken(token)
+    .then(() => true)
+    .catch(() => false);
+
+  if (isAuthenticated) {
+    res.send({ worldData });
+  } else {
+    res.sendStatus(401);
+  }
+});
+
+// HTTP(S) SERVER
 let server = null;
 if (process.env.NODE_ENV === 'development') {
   // during development setup HTTPS using self signed certificate
@@ -1276,7 +1283,11 @@ if (process.env.NODE_ENV === 'development') {
   server = http.createServer(app);
 }
 
-// create socket.io server from node http(s) server
+server.listen(process.env.PORT, () => {
+  console.log(`Server is running...`);
+});
+
+// WEBSOCKET
 const io = new Server(server, {
   cors: {
     // only allow client URL origin to make requests
@@ -1284,10 +1295,6 @@ const io = new Server(server, {
     // only allow GET requests
     methods: ['GET'],
   },
-});
-
-server.listen(process.env.PORT, () => {
-  console.log(`Server is running...`);
 });
 
 // token authentication when clients connect
@@ -1307,8 +1314,6 @@ io.use(async (socket, next) => {
 const getNumberOfConnectedClients = () => {
   return io.engine.clientsCount;
 };
-
-const players = {};
 
 io.on(events.CONNECTION, (client) => {
   console.log(`User ${client.handshake.auth.userId} connected on socket ${client.id}, there are currently ${getNumberOfConnectedClients()} users connected`);
@@ -1462,10 +1467,10 @@ const playerBoundingBox = {
 
 const updatePlayerPosition = (player, world) => {
   const newPosition = { ...player.position };
-  if (player.controls.left) newPosition.x -= SPEED;
-  if (player.controls.right) newPosition.x += SPEED;
-  if (player.controls.forward) newPosition.z -= SPEED;
-  if (player.controls.backward) newPosition.z += SPEED;
+  if (player.controls.left) newPosition.x -= PLAYER_SPEED;
+  if (player.controls.right) newPosition.x += PLAYER_SPEED;
+  if (player.controls.forward) newPosition.z -= PLAYER_SPEED;
+  if (player.controls.backward) newPosition.z += PLAYER_SPEED;
 
   return newPosition;
 };
