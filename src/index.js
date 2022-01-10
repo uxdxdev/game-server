@@ -1374,7 +1374,10 @@ const main = () => {
 
     // if collision use previous position instead of new position
     players[key].position = isPlayerColliding ? playerData.position : newPosition;
-    players[key].rotation = rotation;
+
+    // only update the rotation if the player is moving, this keeps the player orientated correctly when they stop moving
+    const moving = playerData.controls.left || playerData.controls.right || playerData.controls.forward || playerData.controls.backward;
+    players[key].rotation = moving ? rotation : players[key].rotation;
   });
   // send all clients all player data
   io.sockets.emit('players', players);
@@ -1548,3 +1551,49 @@ const doPolygonsIntersect = (a, b) => {
   }
   return true;
 };
+
+const pick = ['left', 'right', 'forward', 'backward'];
+const getRandomInt = (min, max) => {
+  min = Math.ceil(min);
+  max = Math.floor(max);
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+};
+
+const generateRandomPlayers = () => {
+  // randomly move the players around
+  for (let p = 0; p < 10; p++) {
+    players['player' + p].controls = {
+      left: false,
+      right: false,
+      forward: false,
+      backward: false,
+    };
+    const index = getRandomInt(0, 3);
+    const direction = pick[index];
+    players['player' + p].controls[direction] = true;
+  }
+};
+
+const initRandomPlayers = () => {
+  // setup some players
+  for (let p = 0; p < 10; p++) {
+    players['player' + p] = {
+      position: {
+        x: 0,
+        y: 0,
+        z: 0,
+      },
+      rotation: 0,
+      controls: {
+        left: false,
+        right: false,
+        forward: false,
+        backward: false,
+      },
+    };
+  }
+};
+// initRandomPlayers();
+setInterval(() => {
+  // generateRandomPlayers();
+}, 33);
