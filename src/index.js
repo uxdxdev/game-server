@@ -7,16 +7,22 @@ import dotenv from 'dotenv';
 import admin from 'firebase-admin';
 import { Vector3 } from 'three';
 
-const PLAYER_SPEED = 0.5;
+const tickRateMilliseconds = 15.625; // server update in milliseconds
+const PLAYER_SPEED = 0.2;
 const players = {};
 const events = {
   CONNECTION: 'connection',
   DISCONNECT: 'disconnect',
   CONNECTED: 'connected',
 };
+
+const frontVector = new Vector3();
+const sideVector = new Vector3();
+const direction = new Vector3();
+
 const trees = [
   {
-    name: 'tree',
+    type: 'tree',
     bbox: {
       bl: {
         x: 0.5,
@@ -40,7 +46,7 @@ const trees = [
     rotation: 2.2877994332820304,
   },
   {
-    name: 'tree',
+    type: 'tree',
     bbox: {
       bl: {
         x: 0.5,
@@ -64,7 +70,7 @@ const trees = [
     rotation: 1.1710819415102538,
   },
   {
-    name: 'tree',
+    type: 'tree',
     bbox: {
       bl: {
         x: 0.5,
@@ -88,7 +94,7 @@ const trees = [
     rotation: 2.4509400560824135,
   },
   {
-    name: 'tree',
+    type: 'tree',
     bbox: {
       bl: {
         x: 0.5,
@@ -112,7 +118,7 @@ const trees = [
     rotation: 2.3501323438484394,
   },
   {
-    name: 'tree',
+    type: 'tree',
     bbox: {
       bl: {
         x: 0.5,
@@ -136,7 +142,7 @@ const trees = [
     rotation: 2.122005731671518,
   },
   {
-    name: 'tree',
+    type: 'tree',
     bbox: {
       bl: {
         x: 0.5,
@@ -160,7 +166,7 @@ const trees = [
     rotation: 0.7210891195907829,
   },
   {
-    name: 'tree',
+    type: 'tree',
     bbox: {
       bl: {
         x: 0.5,
@@ -184,7 +190,7 @@ const trees = [
     rotation: 0.33514948174229187,
   },
   {
-    name: 'tree',
+    type: 'tree',
     bbox: {
       bl: {
         x: 0.5,
@@ -208,7 +214,7 @@ const trees = [
     rotation: 0.021704156372019837,
   },
   {
-    name: 'tree',
+    type: 'tree',
     bbox: {
       bl: {
         x: 0.5,
@@ -232,7 +238,7 @@ const trees = [
     rotation: 0.07255237416921666,
   },
   {
-    name: 'tree',
+    type: 'tree',
     bbox: {
       bl: {
         x: 0.5,
@@ -256,7 +262,7 @@ const trees = [
     rotation: 2.7789401250019785,
   },
   {
-    name: 'tree',
+    type: 'tree',
     bbox: {
       bl: {
         x: 0.5,
@@ -280,7 +286,7 @@ const trees = [
     rotation: 1.065988415418212,
   },
   {
-    name: 'tree',
+    type: 'tree',
     bbox: {
       bl: {
         x: 0.5,
@@ -304,7 +310,7 @@ const trees = [
     rotation: 3.026271079656134,
   },
   {
-    name: 'tree',
+    type: 'tree',
     bbox: {
       bl: {
         x: 0.5,
@@ -328,7 +334,7 @@ const trees = [
     rotation: 0.5215170365083107,
   },
   {
-    name: 'tree',
+    type: 'tree',
     bbox: {
       bl: {
         x: 0.5,
@@ -352,7 +358,7 @@ const trees = [
     rotation: 1.5584772864158605,
   },
   {
-    name: 'tree',
+    type: 'tree',
     bbox: {
       bl: {
         x: 0.5,
@@ -376,7 +382,7 @@ const trees = [
     rotation: 2.516774685898536,
   },
   {
-    name: 'tree',
+    type: 'tree',
     bbox: {
       bl: {
         x: 0.5,
@@ -400,7 +406,7 @@ const trees = [
     rotation: 2.180290409313535,
   },
   {
-    name: 'tree',
+    type: 'tree',
     bbox: {
       bl: {
         x: 0.5,
@@ -424,7 +430,7 @@ const trees = [
     rotation: 2.4113514173818134,
   },
   {
-    name: 'tree',
+    type: 'tree',
     bbox: {
       bl: {
         x: 0.5,
@@ -448,7 +454,7 @@ const trees = [
     rotation: 2.248144885675486,
   },
   {
-    name: 'tree',
+    type: 'tree',
     bbox: {
       bl: {
         x: 0.5,
@@ -472,7 +478,7 @@ const trees = [
     rotation: 0.4206530715249706,
   },
   {
-    name: 'tree',
+    type: 'tree',
     bbox: {
       bl: {
         x: 0.5,
@@ -496,7 +502,7 @@ const trees = [
     rotation: 2.2015094356442666,
   },
   {
-    name: 'tree',
+    type: 'tree',
     bbox: {
       bl: {
         x: 0.5,
@@ -520,7 +526,7 @@ const trees = [
     rotation: 0.0831329416487083,
   },
   {
-    name: 'tree',
+    type: 'tree',
     bbox: {
       bl: {
         x: 0.5,
@@ -544,7 +550,7 @@ const trees = [
     rotation: 0.8044805423557037,
   },
   {
-    name: 'tree',
+    type: 'tree',
     bbox: {
       bl: {
         x: 0.5,
@@ -568,7 +574,7 @@ const trees = [
     rotation: 0.8088879703555721,
   },
   {
-    name: 'tree',
+    type: 'tree',
     bbox: {
       bl: {
         x: 0.5,
@@ -592,7 +598,7 @@ const trees = [
     rotation: 2.515836004211794,
   },
   {
-    name: 'tree',
+    type: 'tree',
     bbox: {
       bl: {
         x: 0.5,
@@ -616,7 +622,7 @@ const trees = [
     rotation: 1.0766071191686488,
   },
   {
-    name: 'tree',
+    type: 'tree',
     bbox: {
       bl: {
         x: 0.5,
@@ -640,7 +646,7 @@ const trees = [
     rotation: 2.4626110033392283,
   },
   {
-    name: 'tree',
+    type: 'tree',
     bbox: {
       bl: {
         x: 0.5,
@@ -664,7 +670,7 @@ const trees = [
     rotation: 0.23821009449184166,
   },
   {
-    name: 'tree',
+    type: 'tree',
     bbox: {
       bl: {
         x: 0.5,
@@ -688,7 +694,7 @@ const trees = [
     rotation: 2.4381921765247734,
   },
   {
-    name: 'tree',
+    type: 'tree',
     bbox: {
       bl: {
         x: 0.5,
@@ -712,7 +718,7 @@ const trees = [
     rotation: 1.3051786738401518,
   },
   {
-    name: 'tree',
+    type: 'tree',
     bbox: {
       bl: {
         x: 0.5,
@@ -736,7 +742,7 @@ const trees = [
     rotation: 2.582674912557875,
   },
   {
-    name: 'tree',
+    type: 'tree',
     bbox: {
       bl: {
         x: 0.5,
@@ -760,7 +766,7 @@ const trees = [
     rotation: 1.664545491759111,
   },
   {
-    name: 'tree',
+    type: 'tree',
     bbox: {
       bl: {
         x: 0.5,
@@ -784,7 +790,7 @@ const trees = [
     rotation: 0.05498910141646792,
   },
   {
-    name: 'tree',
+    type: 'tree',
     bbox: {
       bl: {
         x: 0.5,
@@ -808,7 +814,7 @@ const trees = [
     rotation: 1.0341483068112407,
   },
   {
-    name: 'tree',
+    type: 'tree',
     bbox: {
       bl: {
         x: 0.5,
@@ -832,7 +838,7 @@ const trees = [
     rotation: 2.648219145843404,
   },
   {
-    name: 'tree',
+    type: 'tree',
     bbox: {
       bl: {
         x: 0.5,
@@ -856,7 +862,7 @@ const trees = [
     rotation: 2.5114814368884755,
   },
   {
-    name: 'tree',
+    type: 'tree',
     bbox: {
       bl: {
         x: 0.5,
@@ -880,7 +886,7 @@ const trees = [
     rotation: 2.7907100149480275,
   },
   {
-    name: 'tree',
+    type: 'tree',
     bbox: {
       bl: {
         x: 0.5,
@@ -904,7 +910,7 @@ const trees = [
     rotation: 3.0910733444006135,
   },
   {
-    name: 'tree',
+    type: 'tree',
     bbox: {
       bl: {
         x: 0.5,
@@ -928,7 +934,7 @@ const trees = [
     rotation: 2.1010185118022275,
   },
   {
-    name: 'tree',
+    type: 'tree',
     bbox: {
       bl: {
         x: 0.5,
@@ -952,7 +958,7 @@ const trees = [
     rotation: 0.09205736550157151,
   },
   {
-    name: 'tree',
+    type: 'tree',
     bbox: {
       bl: {
         x: 0.5,
@@ -976,7 +982,7 @@ const trees = [
     rotation: 0.29017598018054963,
   },
   {
-    name: 'tree',
+    type: 'tree',
     bbox: {
       bl: {
         x: 0.5,
@@ -1000,7 +1006,7 @@ const trees = [
     rotation: 0.9942192348204996,
   },
   {
-    name: 'tree',
+    type: 'tree',
     bbox: {
       bl: {
         x: 0.5,
@@ -1024,7 +1030,7 @@ const trees = [
     rotation: 3.1186551626953656,
   },
   {
-    name: 'tree',
+    type: 'tree',
     bbox: {
       bl: {
         x: 0.5,
@@ -1048,7 +1054,7 @@ const trees = [
     rotation: 0.11058662987299647,
   },
   {
-    name: 'tree',
+    type: 'tree',
     bbox: {
       bl: {
         x: 0.5,
@@ -1072,7 +1078,7 @@ const trees = [
     rotation: 0.4418120626856891,
   },
   {
-    name: 'tree',
+    type: 'tree',
     bbox: {
       bl: {
         x: 0.5,
@@ -1096,7 +1102,7 @@ const trees = [
     rotation: 0.27916951703262355,
   },
   {
-    name: 'tree',
+    type: 'tree',
     bbox: {
       bl: {
         x: 0.5,
@@ -1120,7 +1126,7 @@ const trees = [
     rotation: 1.6741034425626715,
   },
   {
-    name: 'tree',
+    type: 'tree',
     bbox: {
       bl: {
         x: 0.5,
@@ -1144,7 +1150,7 @@ const trees = [
     rotation: 1.7793213811772306,
   },
   {
-    name: 'tree',
+    type: 'tree',
     bbox: {
       bl: {
         x: 0.5,
@@ -1168,7 +1174,7 @@ const trees = [
     rotation: 0.07419963147662335,
   },
   {
-    name: 'tree',
+    type: 'tree',
     bbox: {
       bl: {
         x: 0.5,
@@ -1192,7 +1198,7 @@ const trees = [
     rotation: 1.556578929636454,
   },
   {
-    name: 'tree',
+    type: 'tree',
     bbox: {
       bl: {
         x: 0.5,
@@ -1217,7 +1223,227 @@ const trees = [
   },
 ];
 
-const worldData = { width: 100, height: 100, objects: [...trees] };
+const houses = [
+  {
+    type: 'house',
+    bbox: {
+      bl: {
+        x: -8,
+        z: -5,
+      },
+      br: {
+        x: -8,
+        z: 5,
+      },
+      fl: {
+        x: 6,
+        z: -5,
+      },
+      fr: {
+        x: 6,
+        z: 5,
+      },
+    },
+    x: 40,
+    z: -40,
+    rotation: Math.PI,
+  },
+  {
+    type: 'house',
+    bbox: {
+      bl: {
+        x: -8,
+        z: -5,
+      },
+      br: {
+        x: -8,
+        z: 5,
+      },
+      fl: {
+        x: 6,
+        z: -5,
+      },
+      fr: {
+        x: 6,
+        z: 5,
+      },
+    },
+    x: -40,
+    z: -40,
+    rotation: Math.PI,
+  },
+  {
+    type: 'house',
+    bbox: {
+      bl: {
+        x: -8,
+        z: -5,
+      },
+      br: {
+        x: -8,
+        z: 5,
+      },
+      fl: {
+        x: 6,
+        z: -5,
+      },
+      fr: {
+        x: 6,
+        z: 5,
+      },
+    },
+    x: -40,
+    z: 40,
+    rotation: Math.PI,
+  },
+  {
+    type: 'house',
+    bbox: {
+      bl: {
+        x: -8,
+        z: -5,
+      },
+      br: {
+        x: -8,
+        z: 5,
+      },
+      fl: {
+        x: 6,
+        z: -5,
+      },
+      fr: {
+        x: 6,
+        z: 5,
+      },
+    },
+    x: 40,
+    z: 40,
+    rotation: Math.PI,
+  },
+];
+
+const walls = [
+  {
+    type: 'wall',
+    bbox: {
+      bl: {
+        x: -0.5,
+        z: -50,
+      },
+      br: {
+        x: -0.5,
+        z: 50,
+      },
+      fl: {
+        x: 0.5,
+        z: -50,
+      },
+      fr: {
+        x: 0.5,
+        z: 50,
+      },
+    },
+    x: 50,
+    z: 0,
+    rotation: 0,
+  },
+  {
+    type: 'wall',
+    bbox: {
+      bl: {
+        x: -0.5,
+        z: -50,
+      },
+      br: {
+        x: -0.5,
+        z: 50,
+      },
+      fl: {
+        x: 0.5,
+        z: -50,
+      },
+      fr: {
+        x: 0.5,
+        z: 50,
+      },
+    },
+    x: 0,
+    z: 50,
+    rotation: Math.PI / 2,
+  },
+  {
+    type: 'wall',
+    bbox: {
+      bl: {
+        x: -0.5,
+        z: -50,
+      },
+      br: {
+        x: -0.5,
+        z: 50,
+      },
+      fl: {
+        x: 0.5,
+        z: -50,
+      },
+      fr: {
+        x: 0.5,
+        z: 50,
+      },
+    },
+    x: 0,
+    z: -50,
+    rotation: -Math.PI / 2,
+  },
+  {
+    type: 'wall',
+    bbox: {
+      bl: {
+        x: -0.5,
+        z: -50,
+      },
+      br: {
+        x: -0.5,
+        z: 50,
+      },
+      fl: {
+        x: 0.5,
+        z: -50,
+      },
+      fr: {
+        x: 0.5,
+        z: 50,
+      },
+    },
+    x: -50,
+    z: 0,
+    rotation: Math.PI,
+  },
+];
+
+const playerBoundingBox = {
+  bl: {
+    x: -0.5,
+    z: -0.5,
+  },
+  br: {
+    x: -0.5,
+    z: 0.5,
+  },
+  fl: {
+    x: 2,
+    z: -0.5,
+  },
+  fr: {
+    x: 2,
+    z: 0.5,
+  },
+};
+
+const worldData = {
+  objects: [...walls, ...trees, ...houses],
+  playerBoundingBox,
+};
 
 dotenv.config();
 
@@ -1354,15 +1580,17 @@ io.on(events.CONNECTION, (client) => {
   });
 });
 
-const tickRateMilliseconds = 33; // update times per second
 setInterval(() => {
   main();
 }, tickRateMilliseconds);
 
 const main = () => {
   // for each player, update player position based on world, objects, and collision data
-  Object.keys(players).forEach((key) => {
+  for (let key of Object.keys(players)) {
     const playerData = players[key];
+
+    const moving = playerData.controls.left || playerData.controls.right || playerData.controls.forward || playerData.controls.backward;
+    // if (!moving) continue;
 
     // apply rotation to player based on controls
     frontVector.set(0, 0, Number(playerData.controls.backward) - Number(playerData.controls.forward));
@@ -1381,55 +1609,24 @@ const main = () => {
     players[key].position = isPlayerColliding ? playerData.position : newPosition;
 
     // only update the rotation if the player is moving, this keeps the player orientated correctly when they stop moving
-    const moving = playerData.controls.left || playerData.controls.right || playerData.controls.forward || playerData.controls.backward;
     players[key].rotation = moving ? rotation : players[key].rotation;
-  });
+
+    // players[key].controls = {
+    //   left: false,
+    //   right: false,
+    //   forward: false,
+    //   backward: false,
+    // };
+  }
   // send all clients all player data
   io.sockets.emit('players', players);
 };
 
-const p0 = new Vector3();
-const p1 = new Vector3();
-
 const runCollisionDetection = (playerData, world) => {
   const playerBBoxRotated = getRotatedRectangle(playerData.rotation, playerData.position, playerBoundingBox);
 
-  // world boundary collisions
-  if (
-    // check player bbox and world dimensions
-    playerBBoxRotated[0].x >= world.width / 2 ||
-    playerBBoxRotated[0].x <= -world.width / 2 ||
-    playerBBoxRotated[0].z >= world.height / 2 ||
-    playerBBoxRotated[0].z <= -world.height / 2 ||
-    playerBBoxRotated[1].x >= world.width / 2 ||
-    playerBBoxRotated[1].x <= -world.width / 2 ||
-    playerBBoxRotated[1].z >= world.height / 2 ||
-    playerBBoxRotated[1].z <= -world.height / 2 ||
-    playerBBoxRotated[2].x >= world.width / 2 ||
-    playerBBoxRotated[2].x <= -world.width / 2 ||
-    playerBBoxRotated[2].z >= world.height / 2 ||
-    playerBBoxRotated[2].z <= -world.height / 2 ||
-    playerBBoxRotated[3].x >= world.width / 2 ||
-    playerBBoxRotated[3].x <= -world.width / 2 ||
-    playerBBoxRotated[3].z >= world.height / 2 ||
-    playerBBoxRotated[3].z <= -world.height / 2
-  ) {
-    return true;
-  }
-
-  // world object collisions
   const worldObjects = world.objects;
-  // only check for collision when objects are within range
-  const collisionCullingDistance = 4;
   for (const worldObject of worldObjects) {
-    p0.set(playerData.position.x, 0, playerData.position.z);
-    p1.set(worldObject.x, 0, worldObject.z);
-    const distanceBetweenPlayerAndObject = p0.distanceTo(p1);
-    if (distanceBetweenPlayerAndObject >= collisionCullingDistance) {
-      // player is not close to this object skip to next object
-      continue;
-    }
-
     const objectBBoxRotated = getRotatedRectangle(worldObject.rotation, { x: worldObject.x, z: worldObject.z }, worldObject.bbox);
     if (doPolygonsIntersect(playerBBoxRotated, objectBBoxRotated)) {
       // end the loop and signal a collision
@@ -1438,31 +1635,6 @@ const runCollisionDetection = (playerData, world) => {
   }
 
   return false;
-};
-
-const frontVector = new Vector3();
-const sideVector = new Vector3();
-const direction = new Vector3();
-
-// when player facing downwards, i.e. rotation is 0
-// bounding box coordinates relative to player center position
-const playerBoundingBox = {
-  bl: {
-    x: -0.5,
-    z: -0.5,
-  },
-  br: {
-    x: -0.5,
-    z: 0.5,
-  },
-  fl: {
-    x: 2,
-    z: -0.5,
-  },
-  fr: {
-    x: 2,
-    z: 0.5,
-  },
 };
 
 const updatePlayerPosition = (player, world) => {
@@ -1566,7 +1738,7 @@ const getRandomInt = (min, max) => {
 
 const generateRandomPlayers = () => {
   // randomly move the players around
-  for (let p = 0; p < 10; p++) {
+  for (let p = 0; p < 100; p++) {
     players['player' + p].controls = {
       left: false,
       right: false,
@@ -1581,7 +1753,7 @@ const generateRandomPlayers = () => {
 
 const initRandomPlayers = () => {
   // setup some players
-  for (let p = 0; p < 10; p++) {
+  for (let p = 0; p < 100; p++) {
     players['player' + p] = {
       position: {
         x: 0,
@@ -1599,6 +1771,6 @@ const initRandomPlayers = () => {
   }
 };
 // initRandomPlayers();
-setInterval(() => {
-  // generateRandomPlayers();
-}, 33);
+// setInterval(() => {
+//   generateRandomPlayers();
+// }, 33);
