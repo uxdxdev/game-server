@@ -69,9 +69,14 @@ const auth = admin.auth();
 const app = express();
 
 // Cross-origin resource sharing settings
+let ALLOWED_ORIGINS = [process.env.CLIENT_URL, 'https://localhost:3000'];
+
 app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  let allowedOrigins = ALLOWED_ORIGINS.indexOf(origin) >= 0 ? origin : ALLOWED_ORIGINS[0];
+
   // only allow requests from the client URL
-  res.header('Access-Control-Allow-Origin', process.env.CLIENT_URL);
+  res.header('Access-Control-Allow-Origin', allowedOrigins);
   res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, auth-token');
   res.header('Access-Control-Allow-Methods', 'GET');
   next();
