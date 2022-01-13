@@ -129,10 +129,7 @@ server.listen(process.env.PORT, () => {
 // WEBSOCKET
 const io = new Server(server, {
   cors: {
-    // only allow client URL origin to make requests
-    origin: process.env.CLIENT_URL,
-    // only allow GET requests
-    methods: ['GET'],
+    origin: ALLOWED_ORIGINS,
   },
 });
 
