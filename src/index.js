@@ -167,6 +167,7 @@ io.on(events.CONNECTION, (client) => {
       forward: false,
       backward: false,
     },
+    timestamp: 0,
   };
 
   // send client id to signal server authentication
@@ -227,6 +228,8 @@ const main = () => {
     //   forward: false,
     //   backward: false,
     // };
+
+    players[key].timestamp = Date.now();
   }
   // send all clients all player data
   io.sockets.emit('players', players);
